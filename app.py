@@ -1,11 +1,10 @@
-# app.py
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime
 
+# --- Page config ---
 st.set_page_config(page_title="Student Expenses Tracker", layout="wide")
 st.title("💰 Student Expenses Tracker")
 
@@ -15,9 +14,9 @@ if "expenses" not in st.session_state:
 if "categories" not in st.session_state:
     st.session_state.categories = ["Food", "Transport", "Entertainment", "Books"]
 if "monthly_budget" not in st.session_state:
-    st.session_state.monthly_budget = 1000.0  # default budget as float
+    st.session_state.monthly_budget = 1000.0  # default budget
 
-# --- Sidebar for budget and custom categories ---
+# --- Sidebar: Budget & Categories ---
 st.sidebar.header("⚙ Settings")
 st.session_state.monthly_budget = st.sidebar.number_input(
     "Set Monthly Budget (RM)",
@@ -32,7 +31,7 @@ if st.sidebar.button("Add Category") and new_category:
         st.session_state.categories.append(new_category)
         st.sidebar.success(f"Added '{new_category}' category!")
 
-# --- User Input Form ---
+# --- Add Expense Form ---
 st.header("Add Your Expense")
 with st.form("expense_form"):
     date = st.date_input("Date", value=datetime.today())
@@ -73,28 +72,33 @@ if not st.session_state.expenses.empty:
     elif total > 0.8 * st.session_state.monthly_budget:
         st.info("💡 You are close to your budget limit. Spend wisely!")
 
-    # --- Visualization ---
+    # --- Visualization: Expenses by Category ---
     st.subheader("Expenses by Category")
-    plt.figure(figsize=(6,4))
+    fig1, ax1 = plt.subplots(figsize=(6,4))
     sns.barplot(
         data=df.groupby("Category")["Amount"].sum().reset_index(),
         x="Category",
         y="Amount",
-        palette="coolwarm"
+        palette="coolwarm",
+        ax=ax1
     )
-    plt.ylabel("Total Amount (RM)")
-    st.pyplot(plt)
+    ax1.set_ylabel("Total Amount (RM)")
+    st.pyplot(fig1)
 
+    # --- Visualization: Expenses Over Time ---
     st.subheader("Expenses Over Time")
-    plt.figure(figsize=(8,4))
     time_data = df.groupby("Date")["Amount"].sum().reset_index()
-    sns.lineplot(data=time_data, x="Date", y="Amount", marker="o")
-    plt.ylabel("Amount (RM)")
-    st.pyplot(plt)
+    fig2, ax2 = plt.subplots(figsize=(8,4))
+    sns.lineplot(data=time_data, x="Date", y="Amount", marker="o", ax=ax2)
+    ax2.set_ylabel("Amount (RM)")
+    st.pyplot(fig2)
 
+    # --- Visualization: Category Breakdown (Pie Chart) ---
     st.subheader("Category Breakdown (Pie Chart)")
     pie_data = df.groupby("Category")["Amount"].sum()
-    st.pyplot(pie_data.plot.pie(autopct="%1.1f%%", figsize=(5,5)).figure)
+    fig3, ax3 = plt.subplots(figsize=(5,5))
+    pie_data.plot.pie(autopct="%1.1f%%", ax=ax3)
+    st.pyplot(fig3)
 
     # --- Motivational Message ---
     top_category = df.groupby("Category")["Amount"].sum().idxmax()
@@ -109,3 +113,4 @@ if not st.session_state.expenses.empty:
     )
 else:
     st.info("No expenses recorded yet. Add your first expense above!")
+
